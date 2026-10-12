@@ -22,53 +22,151 @@ REPORT_ROLES = ("admin", "receptionist")
 
 @role_required(*DASHBOARD_ROLES)
 def dashboard(request):
+    from scheduling.models import Doctor
+
+    from .charts import area_chart, bars, donut, sparkline
+
     today = timezone.localdate()
     month_start = today.replace(day=1)
 
-    kpis = {
-        "patients": Patient.objects.count(),
-        "appointments_today": Appointment.objects.filter(
-            appt_date=today, status=Appointment.STATUS_SCHEDULED
-        ).count(),
-        "beds_occupied": Bed.objects.filter(status=Bed.STATUS_OCCUPIED).count(),
-        "beds_total": Bed.objects.count(),
-        "revenue_month": Payment.objects.filter(paid_at__date__gte=month_start).aggregate(
-            total=Sum("amount")
-        )["total"]
-        or Decimal("0"),
-    }
-    todays_appointments = (
-        Appointment.objects.select_related("patient", "doctor")
-        .filter(appt_date=today)
-        .order_by("appt_time")[:10]
+    # ---- KPI cards ------------------------------------------------------
+    appt_total = Appointment.objects.count()
+    new_patients_month = Patient.objects.filter(created_at__date__gte=month_start).count()
+    beds_occupied = Bed.objects.filter(status=Bed.STATUS_OCCUPIED).count()
+    beds_total = Bed.objects.count() or 1
+    revenue_month = (
+        Payment.objects.filter(paid_at__date__gte=month_start).aggregate(total=Sum("amount"))[
+            "total"
+        ]
+        or Decimal("0")
     )
-    low_stock = [m for m in Medicine.objects.all() if m.is_low_stock][:8]
-    recent_invoices = Invoice.objects.select_related("patient").order_by("-created_at")[:8]
 
-    # 14-day revenue for the SVG bar chart
+    # 14-day sparkline series
     days = [today - timedelta(days=i) for i in range(13, -1, -1)]
-    revenue_by_day = {
-        row["day"]: row["total"]
-        for row in (
-            Payment.objects.filter(paid_at__date__gte=days[0])
-            .annotate(day=TruncDate("paid_at"))
-            .values("day")
-            .annotate(total=Sum("amount"))
-        )
+    appt_by_day = {
+        r["day"]: r["n"]
+        for r in Appointment.objects.filter(appt_date__gte=days[0])
+        .annotate(day=TruncDate("appt_date"))
+        .values("day")
+        .annotate(n=Count("id"))
     }
-    chart = [
-        {"label": d.strftime("%d %b"), "total": float(revenue_by_day.get(d, 0) or 0)}
-        for d in days
+    newpat_by_day = {
+        r["day"]: r["n"]
+        for r in Patient.objects.filter(created_at__date__gte=days[0])
+        .annotate(day=TruncDate("created_at"))
+        .values("day")
+        .annotate(n=Count("id"))
+    }
+    revenue_by_day = {
+        r["day"]: float(r["total"] or 0)
+        for r in Payment.objects.filter(paid_at__date__gte=days[0])
+        .annotate(day=TruncDate("paid_at"))
+        .values("day")
+        .annotate(total=Sum("amount"))
+    }
+    spark_appt = [appt_by_day.get(d, 0) for d in days]
+    spark_newpat = [newpat_by_day.get(d, 0) for d in days]
+    spark_revenue = [revenue_by_day.get(d, 0) for d in days]
+
+    kpis = [
+        {
+            "label": "Appointments",
+            "value": f"{appt_total:,}",
+            "icon": "calendar",
+            "color": "#7c3aed",
+            "spark": sparkline(spark_appt, "#7c3aed"),
+            "link": "scheduling:appointment_list",
+            "link_text": "View schedule",
+        },
+        {
+            "label": "Beds occupied",
+            "value": f"{beds_occupied}",
+            "sub": f"of {beds_total}",
+            "icon": "bed",
+            "color": "#f59e0b",
+            "donut": donut(beds_occupied / beds_total * 100, "#f59e0b", label="occupied"),
+            "link": "wards:ward_list",
+            "link_text": "Bed board",
+        },
+        {
+            "label": "New patients",
+            "value": f"{new_patients_month:,}",
+            "sub": "this month",
+            "icon": "users",
+            "color": "#10b981",
+            "spark": sparkline(spark_newpat, "#10b981"),
+            "link": "patients:list",
+            "link_text": "View patients",
+        },
+        {
+            "label": "Revenue",
+            "value": f"{float(revenue_month):,.0f}",
+            "sub": "this month",
+            "icon": "wallet",
+            "color": "#3b82f6",
+            "spark": sparkline(spark_revenue, "#3b82f6"),
+            "link": "billing:invoice_list",
+            "link_text": "View billing",
+        },
     ]
-    chart_max = max([c["total"] for c in chart] + [1])
+
+    # ---- Hospital survey: last 6 months, new patients vs appointments ----
+    months, m_newpat, m_appt = [], [], []
+    for i in range(5, -1, -1):
+        # step back i months from month_start
+        y, mo = month_start.year, month_start.month - i
+        while mo <= 0:
+            mo += 12
+            y -= 1
+        m_start = month_start.replace(year=y, month=mo, day=1)
+        m_end = (m_start + timedelta(days=32)).replace(day=1)
+        months.append(m_start.strftime("%b"))
+        m_newpat.append(
+            Patient.objects.filter(
+                created_at__date__gte=m_start, created_at__date__lt=m_end
+            ).count()
+        )
+        m_appt.append(
+            Appointment.objects.filter(appt_date__gte=m_start, appt_date__lt=m_end).count()
+        )
+    survey_svg = area_chart(
+        months,
+        [("New patients", "#3b82f6", m_newpat), ("Appointments", "#f59e0b", m_appt)],
+    )
+
+    # ---- Appointment summary + revenue bars ------------------------------
+    appt_completed = Appointment.objects.filter(status=Appointment.STATUS_COMPLETED).count()
+    appt_scheduled = Appointment.objects.filter(status=Appointment.STATUS_SCHEDULED).count()
+    rev_labels = [d.strftime("%d %b") for d in days]
+    revenue_svg = bars(spark_revenue, rev_labels, "#3b82f6")
+    revenue_delta = ""
+    if len(spark_revenue) >= 14:
+        prev = sum(spark_revenue[:7]) or 1
+        cur = sum(spark_revenue[7:])
+        pct = (cur - prev) / prev * 100
+        revenue_delta = f"{'+' if pct >= 0 else ''}{pct:.1f}%"
+
+    # ---- Upcoming appointments table -------------------------------------
+    upcoming = (
+        Appointment.objects.select_related("patient", "doctor")
+        .filter(appt_date__gte=today)
+        .order_by("appt_date", "appt_time")[:8]
+    )
+
+    # ---- Doctor status ----------------------------------------------------
+    doctors = Doctor.objects.filter(active=True).order_by("first_name", "last_name")[:6]
 
     context = {
         "kpis": kpis,
-        "todays_appointments": todays_appointments,
-        "low_stock": low_stock,
-        "recent_invoices": recent_invoices,
-        "chart": chart,
-        "chart_max": chart_max,
+        "survey_svg": survey_svg,
+        "appt_total": appt_total,
+        "appt_completed": appt_completed,
+        "appt_scheduled": appt_scheduled,
+        "revenue_month": revenue_month,
+        "revenue_delta": revenue_delta,
+        "revenue_svg": revenue_svg,
+        "upcoming": upcoming,
+        "doctors": doctors,
         "today": today,
     }
     return render(request, "reports/dashboard.html", context)

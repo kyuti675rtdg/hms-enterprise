@@ -26,3 +26,18 @@ def nav_items(request):
     role = getattr(user, "role", None) if user and user.is_authenticated else None
     items = [i for i in NAV if role in i["roles"]] if role else []
     return {"nav_items": items}
+
+
+def topbar(request):
+    """Small live counters for the topbar (notification badge)."""
+    user = getattr(request, "user", None)
+    if not (user and user.is_authenticated):
+        return {"topbar": {"pending_today": 0}}
+    from django.utils import timezone
+
+    from scheduling.models import Appointment
+
+    pending_today = Appointment.objects.filter(
+        appt_date=timezone.localdate(), status=Appointment.STATUS_SCHEDULED
+    ).count()
+    return {"topbar": {"pending_today": pending_today}}

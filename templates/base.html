@@ -15,6 +15,16 @@
       <span class="brand-mark">H+</span>
       <span class="brand-text">HMS Enterprise</span>
     </div>
+    {% if request.user.is_authenticated %}
+    <div class="profile-card">
+      <span class="avatar avatar-lg">{{ request.user.first_name|default:request.user.username|slice:":1"|upper }}</span>
+      <span class="user-meta">
+        <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
+        <small>{{ request.user.get_role_display }}</small>
+      </span>
+    </div>
+    {% endif %}
+    <div class="nav-section">Main Menu</div>
     <nav class="nav">
       {% for item in nav_items %}
         {% url item.url_name as item_url %}
@@ -26,13 +36,6 @@
       {% endfor %}
     </nav>
     <div class="sidebar-foot">
-      <div class="user-chip">
-        <span class="avatar">{{ request.user.first_name|default:request.user.username|slice:":1"|upper }}</span>
-        <span class="user-meta">
-          <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
-          <small>{{ request.user.get_role_display }}</small>
-        </span>
-      </div>
       <form method="post" action="{% url 'accounts:logout' %}">
         {% csrf_token %}
         <button type="submit" class="btn btn-ghost btn-block">
@@ -47,8 +50,30 @@
       <button class="icon-btn sidebar-toggle" id="sidebarToggle" aria-label="Toggle menu">
         {% include "_icon.html" with name="menu" %}
       </button>
-      <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
-      <div class="topbar-actions">{% block topbar_actions %}{% endblock %}</div>
+      <div class="topbar-title">
+        <nav class="crumbs" aria-label="Breadcrumb">{% block crumbs %}{% endblock %}</nav>
+        <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
+      </div>
+      <div class="topbar-actions">
+        {% if request.user.is_authenticated %}
+        <form class="topsearch" action="{% url 'patients:list' %}" method="get" role="search">
+          <button type="submit" aria-label="Search">{% include "_icon.html" with name="search" %}</button>
+          <input type="search" name="q" placeholder="Search patients…" autocomplete="off">
+        </form>
+        <button class="icon-btn bell-btn" aria-label="Notifications" title="{{ topbar.pending_today }} appointments today">
+          {% include "_icon.html" with name="bell" %}
+          {% if topbar.pending_today %}<span class="badge-dot">{{ topbar.pending_today }}</span>{% endif %}
+        </button>
+        <div class="user-chip">
+          <span class="avatar">{{ request.user.first_name|default:request.user.username|slice:":1"|upper }}</span>
+          <span class="user-meta">
+            <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
+            <small>{{ request.user.get_role_display }}</small>
+          </span>
+        </div>
+        {% endif %}
+        {% block topbar_actions %}{% endblock %}
+      </div>
     </header>
 
     <main class="content">

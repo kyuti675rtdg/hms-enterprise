@@ -1,109 +1,131 @@
 {% extends "base.html" %}
 {% block title %}Dashboard{% endblock %}
-{% block page_title %}Dashboard <span class="muted small">{{ today|date:"l, d M Y" }}</span>{% endblock %}
+{% block crumbs %}
+<a href="{% url 'reports:dashboard' %}">Dashboard</a><span class="sep">›</span><span>Overview</span>
+{% endblock %}
+{% block page_title %}Hospital Dashboard{% endblock %}
+
 {% block content %}
-<div class="stat-grid">
-  <div class="stat-card">
-    <div class="stat-label">Total patients</div>
-    <div class="stat-value">{{ kpis.patients }}</div>
-    <div class="stat-sub"><a href="{% url 'patients:list' %}">View all patients</a></div>
-  </div>
-  <div class="stat-card tint-teal">
-    <div class="stat-label">Appointments today</div>
-    <div class="stat-value">{{ kpis.appointments_today }}</div>
-    <div class="stat-sub"><a href="{% url 'scheduling:appointment_list' %}?date={{ today|date:'Y-m-d' }}">Today's schedule</a></div>
-  </div>
-  <div class="stat-card tint-amber">
-    <div class="stat-label">Beds occupied</div>
-    <div class="stat-value">{{ kpis.beds_occupied }}<span class="small muted"> / {{ kpis.beds_total }}</span></div>
-    <div class="stat-sub"><a href="{% url 'wards:ward_list' %}">Bed board</a></div>
-  </div>
-  <div class="stat-card tint-green">
-    <div class="stat-label">Revenue this month</div>
-    <div class="stat-value">{{ kpis.revenue_month|floatformat:0 }}</div>
-    <div class="stat-sub">collected payments</div>
-  </div>
-</div>
+<div class="dash">
 
-<div class="grid-2">
-  <div class="card">
-    <div class="card-title">{% include "_icon.html" with name="chart" %} Revenue — last 14 days</div>
-    <div class="chart" role="img" aria-label="Revenue bar chart">
-      {% for c in chart %}
-      <div class="bar-col">
-        <div class="bar-tip">{{ c.total|floatformat:0 }}</div>
-        <div class="bar" style="height:{% widthratio c.total chart_max 100 %}%" title="{{ c.label }}: {{ c.total|floatformat:2 }}"></div>
-        <div class="bar-label">{{ c.label }}</div>
+  <!-- KPI cards -->
+  <div class="kpi-row">
+    {% for k in kpis %}
+    <div class="kpi-card">
+      <div class="kpi-top">
+        <span class="kpi-icon" style="--kc:{{ k.color }}">{% include "_icon.html" with name=k.icon %}</span>
+        <div class="kpi-meta">
+          <div class="kpi-label">{{ k.label }}</div>
+          <div class="kpi-value">{{ k.value }}{% if k.sub %} <small>{{ k.sub }}</small>{% endif %}</div>
+        </div>
       </div>
-      {% endfor %}
+      <div class="kpi-chart">
+        {% if k.spark %}{{ k.spark|safe }}{% endif %}
+        {% if k.donut %}{{ k.donut|safe }}{% endif %}
+      </div>
+      <a class="kpi-link" href="{% url k.link %}">{{ k.link_text }}</a>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Survey + side column -->
+  <div class="dash-grid">
+    <section class="panel panel-chart">
+      <div class="panel-head">
+        <div>
+          <h2>Hospital Survey</h2>
+          <p class="muted small">Patient &amp; appointment trends · last 6 months</p>
+        </div>
+        <div class="legend">
+          <span class="legend-item"><i class="dot" style="background:#3b82f6"></i>New patients</span>
+          <span class="legend-item"><i class="dot" style="background:#f59e0b"></i>Appointments</span>
+        </div>
+      </div>
+      {{ survey_svg|safe }}
+    </section>
+
+    <div class="dash-side">
+      <section class="panel appt-panel">
+        <div class="panel-head">
+          <h2>Total Appointments</h2>
+        </div>
+        <div class="appt-total">{{ appt_total }}</div>
+        <div class="appt-pills">
+          <span class="pill pill-blue"><strong>{{ appt_completed }}</strong> Completed</span>
+          <span class="pill pill-orange"><strong>{{ appt_scheduled }}</strong> Scheduled</span>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Revenue</h2>
+            <p class="muted small">{{ today|date:"F Y" }}</p>
+          </div>
+          {% if revenue_delta %}
+          <span class="delta {% if revenue_delta|slice:':1' == '+' %}up{% else %}down{% endif %}">{{ revenue_delta }}</span>
+          {% endif %}
+        </div>
+        <div class="revenue-value">{{ revenue_month|floatformat:0 }}</div>
+        {{ revenue_svg|safe }}
+      </section>
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-title">{% include "_icon.html" with name="calendar" %} Today's appointments</div>
-    {% if todays_appointments %}
-    <div class="table-wrap" style="box-shadow:none">
-      <table class="data">
-        <thead><tr><th>Time</th><th>Patient</th><th>Doctor</th><th>Status</th></tr></thead>
-        <tbody>
-          {% for a in todays_appointments %}
-          <tr>
-            <td>{{ a.appt_time|time:"H:i" }}</td>
-            <td><a href="{% url 'patients:detail' a.patient.pk %}">{{ a.patient.full_name }}</a></td>
-            <td class="small">{{ a.doctor|default:"—" }}</td>
-            <td><span class="badge {% if a.status == 'scheduled' %}b-blue{% elif a.status == 'completed' %}b-green{% elif a.status == 'cancelled' %}b-red{% else %}b-amber{% endif %}">{{ a.get_status_display }}</span></td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% else %}
-    <p class="muted">No appointments scheduled for today.</p>
-    {% endif %}
-  </div>
-</div>
+  <!-- Tables -->
+  <div class="dash-grid dash-grid-2">
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Upcoming Appointments</h2>
+        <a class="link-more" href="{% url 'scheduling:appointment_list' %}">View all</a>
+      </div>
+      {% if upcoming %}
+      <div class="table-wrap table-plain">
+        <table class="data">
+          <thead>
+            <tr><th>Patient</th><th>Doctor</th><th>Date</th><th>Reason</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            {% for a in upcoming %}
+            <tr>
+              <td><a href="{% url 'patients:detail' a.patient.pk %}"><strong>{{ a.patient.full_name }}</strong></a></td>
+              <td class="small">{{ a.doctor.first_name }} {{ a.doctor.last_name }}</td>
+              <td class="small">{{ a.appt_date|date:"d M Y" }} · {{ a.appt_time|time:"H:i" }}</td>
+              <td class="small">{{ a.reason|default:"—"|truncatechars:28 }}</td>
+              <td><span class="badge {% if a.status == 'scheduled' %}b-blue{% elif a.status == 'completed' %}b-green{% elif a.status == 'cancelled' %}b-red{% else %}b-amber{% endif %}">{{ a.get_status_display }}</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="muted">No upcoming appointments.</p>
+      {% endif %}
+    </section>
 
-<div class="grid-2">
-  <div class="card">
-    <div class="card-title">{% include "_icon.html" with name="alert" %} Low-stock alerts</div>
-    {% if low_stock %}
-    <div class="table-wrap" style="box-shadow:none">
-      <table class="data">
-        <thead><tr><th>Medicine</th><th class="num">Stock</th><th class="num">Reorder at</th></tr></thead>
-        <tbody>
-          {% for m in low_stock %}
-          <tr><td>{{ m.name }}</td><td class="num"><strong>{{ m.quantity_in_stock }}</strong></td><td class="num">{{ m.reorder_level }}</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    <p class="mt"><a href="{% url 'pharmacy:inventory' %}?low=1">View all low-stock items</a></p>
-    {% else %}
-    <p class="muted">All stock levels are healthy.</p>
-    {% endif %}
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Doctors</h2>
+        <a class="link-more" href="{% url 'scheduling:doctor_list' %}">View all</a>
+      </div>
+      {% if doctors %}
+      <ul class="doctor-list">
+        {% for d in doctors %}
+        <li>
+          <span class="avatar">{{ d.first_name|slice:":1"|upper }}</span>
+          <span class="doctor-meta">
+            <strong>Dr. {{ d.first_name }} {{ d.last_name }}</strong>
+            <small>{{ d.specialization|default:"General" }}</small>
+          </span>
+          <span class="badge b-green">Available</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="muted">No active doctors.</p>
+      {% endif %}
+    </section>
   </div>
 
-  <div class="card">
-    <div class="card-title">{% include "_icon.html" with name="receipt" %} Recent invoices</div>
-    {% if recent_invoices %}
-    <div class="table-wrap" style="box-shadow:none">
-      <table class="data">
-        <thead><tr><th>Invoice</th><th>Patient</th><th class="num">Total</th><th>Status</th></tr></thead>
-        <tbody>
-          {% for i in recent_invoices %}
-          <tr>
-            <td><a href="{% url 'billing:invoice_detail' i.pk %}"><strong>{{ i.invoice_no }}</strong></a></td>
-            <td class="small">{{ i.patient.full_name }}</td>
-            <td class="num">{{ i.total }}</td>
-            <td><span class="badge {% if i.status == 'paid' %}b-green{% elif i.status == 'partial' %}b-amber{% else %}b-red{% endif %}">{{ i.get_status_display }}</span></td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% else %}
-    <p class="muted">No invoices yet.</p>
-    {% endif %}
-  </div>
 </div>
 {% endblock %}
