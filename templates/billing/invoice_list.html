@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Invoices{% endblock %}
+{% block page_title %}Billing &amp; Invoices{% endblock %}
+{% block topbar_actions %}
+  <a class="btn btn-primary" href="{% url 'billing:invoice_create' %}">{% include "_icon.html" with name="plus" %} New invoice</a>
+{% endblock %}
+{% block content %}
+<div class="stat-grid">
+  <div class="stat-card tint-amber">
+    <div class="stat-label">Outstanding (unpaid)</div>
+    <div class="stat-value">{{ aging.total_due|default:0|floatformat:0 }}</div>
+    <div class="stat-sub">across open invoices</div>
+  </div>
+  <div class="stat-card tint-green">
+    <div class="stat-label">Collected on open invoices</div>
+    <div class="stat-value">{{ aging.total_paid|default:0|floatformat:0 }}</div>
+    <div class="stat-sub">partial payments</div>
+  </div>
+</div>
+<div class="toolbar">
+  <form method="get" style="display:flex;gap:.6rem">
+    <select name="status" class="filter-select" onchange="this.form.submit()">
+      <option value="">All statuses</option>
+      {% for val, label in statuses %}
+      <option value="{{ val }}" {% if f_status == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    {% if f_status %}<a href="{% url 'billing:invoice_list' %}" class="btn btn-secondary btn-sm">Clear</a>{% endif %}
+  </form>
+</div>
+<div class="table-wrap">
+  <table class="data">
+    <thead><tr><th>Invoice</th><th>Patient</th><th>Date</th><th class="num">Total</th><th class="num">Paid</th><th class="num">Balance</th><th>Status</th><th class="row-actions">Actions</th></tr></thead>
+    <tbody>
+      {% for i in invoices %}
+      <tr>
+        <td><strong><a href="{% url 'billing:invoice_detail' i.pk %}">{{ i.invoice_no }}</a></strong></td>
+        <td><a href="{% url 'patients:detail' i.patient.pk %}">{{ i.patient.full_name }}</a></td>
+        <td class="small">{{ i.issue_date|date:"d M Y" }}</td>
+        <td class="num">{{ i.total }}</td>
+        <td class="num">{{ i.amount_paid }}</td>
+        <td class="num"><strong>{{ i.balance }}</strong></td>
+        <td><span class="badge {% if i.status == 'paid' %}b-green{% elif i.status == 'partial' %}b-amber{% else %}b-red{% endif %}">{{ i.get_status_display }}</span></td>
+        <td class="row-actions">
+          <a class="btn btn-secondary btn-sm" href="{% url 'billing:invoice_detail' i.pk %}">View</a>
+          <a class="btn btn-secondary btn-sm" href="{% url 'billing:receipt' i.pk %}" target="_blank">Receipt</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="8"><div class="empty">No invoices found.</div></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

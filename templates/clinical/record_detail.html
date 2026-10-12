@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Medical record{% endblock %}
+{% block page_title %}Medical Record — {{ record.visit_date|date:"d M Y" }}{% endblock %}
+{% block topbar_actions %}
+  <a class="btn btn-secondary" href="{% url 'patients:detail' record.patient.pk %}">{% include "_icon.html" with name="back" %} Patient</a>
+{% endblock %}
+{% block content %}
+<div class="card form-card">
+  <dl class="kv">
+    <dt>Patient</dt><dd><a href="{% url 'patients:detail' record.patient.pk %}">{{ record.patient.full_name }} ({{ record.patient.patient_no }})</a></dd>
+    <dt>Doctor</dt><dd>{{ record.doctor|default:"—" }}</dd>
+    <dt>Visit date</dt><dd>{{ record.visit_date|date:"d M Y" }}</dd>
+    <dt>Diagnosis</dt><dd>{{ record.diagnosis|linebreaksbr }}</dd>
+    <dt>Prescription</dt><dd>{{ record.prescription|linebreaksbr|default:"—" }}</dd>
+    <dt>Notes</dt><dd>{{ record.notes|linebreaksbr|default:"—" }}</dd>
+  </dl>
+</div>
+{% endblock %}

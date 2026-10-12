@@ -1,0 +1,60 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Receipt {{ invoice.invoice_no }}</title>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body>
+<main class="content">
+  <div class="no-print" style="margin-bottom:1rem;display:flex;gap:.6rem">
+    <button class="btn btn-primary" onclick="window.print()">{% include "_icon.html" with name="printer" %} Print</button>
+    <a class="btn btn-secondary" href="{% url 'billing:invoice_detail' invoice.pk %}">Back to invoice</a>
+  </div>
+  <div class="receipt card">
+    <div class="receipt-head">
+      <span class="brand-mark" style="margin:0 auto">H+</span>
+      <h2>HMS Enterprise Hospital</h2>
+      <div class="small muted">Nairobi, Kenya · Tel: 020 123 4567</div>
+      <div class="small muted">Official Receipt</div>
+    </div>
+    <dl class="kv" style="margin-bottom:1rem">
+      <dt>Receipt No</dt><dd><strong>{{ invoice.invoice_no }}</strong></dd>
+      <dt>Patient</dt><dd>{{ invoice.patient.full_name }} ({{ invoice.patient.patient_no }})</dd>
+      <dt>Date</dt><dd>{{ now|date:"d M Y H:i" }}</dd>
+      <dt>Status</dt><dd>{{ invoice.get_status_display }}</dd>
+    </dl>
+    <table>
+      <thead><tr><th>Description</th><th style="text-align:right">Qty</th><th style="text-align:right">Price</th><th style="text-align:right">Total</th></tr></thead>
+      <tbody>
+        {% for item in invoice.items.all %}
+        <tr><td>{{ item.description }}</td><td style="text-align:right">{{ item.quantity }}</td><td style="text-align:right">{{ item.unit_price }}</td><td style="text-align:right">{{ item.line_total }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <table class="totals" style="margin-top:.75rem;margin-left:auto;width:260px">
+      <tr><td>Subtotal</td><td style="text-align:right">{{ invoice.subtotal }}</td></tr>
+      <tr><td>Discount</td><td style="text-align:right">{{ invoice.discount }}</td></tr>
+      <tr><td>Tax</td><td style="text-align:right">{{ invoice.tax }}</td></tr>
+      <tr class="grand"><td>Total</td><td style="text-align:right">{{ invoice.total }}</td></tr>
+      <tr><td>Paid</td><td style="text-align:right">{{ invoice.amount_paid }}</td></tr>
+      <tr><td><strong>Balance</strong></td><td style="text-align:right"><strong>{{ invoice.balance }}</strong></td></tr>
+    </table>
+    <h3 class="mt">Payments</h3>
+    <table>
+      <thead><tr><th>Date</th><th>Method</th><th style="text-align:right">Amount</th></tr></thead>
+      <tbody>
+        {% for p in invoice.payments.all %}
+        <tr><td>{{ p.paid_at|date:"d M Y H:i" }}</td><td>{{ p.get_method_display }}</td><td style="text-align:right">{{ p.amount }}</td></tr>
+        {% empty %}
+        <tr><td colspan="3" class="muted">No payments yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <p class="small muted" style="text-align:center;margin-top:1.5rem">Thank you for choosing HMS Enterprise Hospital.<br>Receipt generated {{ now|date:"d M Y H:i" }}</p>
+  </div>
+</main>
+</body>
+</html>

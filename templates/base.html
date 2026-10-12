@@ -1,0 +1,76 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}HMS{% endblock %} · HMS Enterprise</title>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <script src="{% static 'vendor/htmx.min.js' %}" defer></script>
+</head>
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <span class="brand-mark">H+</span>
+      <span class="brand-text">HMS Enterprise</span>
+    </div>
+    <nav class="nav">
+      {% for item in nav_items %}
+        {% url item.url_name as item_url %}
+        <a href="{{ item_url }}"
+           class="nav-link {% if request.resolver_match.view_name == item.url_name %}active{% endif %}">
+          <span class="nav-icon">{% include "_icon.html" with name=item.icon %}</span>
+          <span class="nav-label">{{ item.label }}</span>
+        </a>
+      {% endfor %}
+    </nav>
+    <div class="sidebar-foot">
+      <div class="user-chip">
+        <span class="avatar">{{ request.user.first_name|default:request.user.username|slice:":1"|upper }}</span>
+        <span class="user-meta">
+          <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
+          <small>{{ request.user.get_role_display }}</small>
+        </span>
+      </div>
+      <form method="post" action="{% url 'accounts:logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-ghost btn-block">
+          <span class="btn-icon">{% include "_icon.html" with name="logout" %}</span> Sign out
+        </button>
+      </form>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="icon-btn sidebar-toggle" id="sidebarToggle" aria-label="Toggle menu">
+        {% include "_icon.html" with name="menu" %}
+      </button>
+      <h1 class="page-title">{% block page_title %}Dashboard{% endblock %}</h1>
+      <div class="topbar-actions">{% block topbar_actions %}{% endblock %}</div>
+    </header>
+
+    <main class="content">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+
+<div class="toasts" id="toasts">
+  {% for message in messages %}
+    <div class="toast toast-{{ message.tags }}" role="alert">
+      <span class="toast-icon">
+        {% if message.tags == "error" %}{% include "_icon.html" with name="alert" %}
+        {% else %}{% include "_icon.html" with name="check" %}{% endif %}
+      </span>
+      <span>{{ message }}</span>
+      <button class="toast-close" aria-label="Dismiss">{% include "_icon.html" with name="x" %}</button>
+    </div>
+  {% endfor %}
+</div>
+
+<script src="{% static 'js/app.js' %}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

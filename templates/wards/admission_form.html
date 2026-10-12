@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Admit patient{% endblock %}
+{% block page_title %}Admit Patient{% endblock %}
+{% block content %}
+<div class="card form-card">
+  <form method="post" id="admit-form">
+    {% csrf_token %}
+    {% include "_form_fields.html" with form=form %}
+    <div class="field">
+      <label for="id_bed">Available bed</label>
+      <select name="bed" id="id_bed" required>
+        <option value="">Select a ward first…</option>
+      </select>
+      <div class="helptext">Only free beds are listed.</div>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Admit patient</button>
+      <a class="btn btn-secondary" href="{% url 'wards:ward_list' %}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+(function () {
+  var wardSelect = document.getElementById("id_ward");
+  var bedSelect = document.getElementById("id_bed");
+  var wards = {};
+  {% for w in form.fields.ward.queryset %}
+    wards["{{ w.pk }}"] = [
+      {% for bed in w.beds.all %}{% if bed.status == "available" %}["{{ bed.pk }}", "{{ bed.bed_no }}"],{% endif %}{% endfor %}
+    ];
+  {% endfor %}
+  function refresh() {
+    var list = wards[wardSelect.value] || [];
+    bedSelect.innerHTML = list.length
+      ? '<option value="">Select bed…</option>'
+      : '<option value="">No free beds in this ward</option>';
+    list.forEach(function (b) {
+      var opt = document.createElement("option");
+      opt.value = b[0];
+      opt.textContent = "Bed " + b[1];
+      bedSelect.appendChild(opt);
+    });
+  }
+  wardSelect.addEventListener("change", refresh);
+  refresh();
+})();
+</script>
+{% endblock %}

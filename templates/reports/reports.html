@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+{% block page_title %}Reports{% endblock %}
+{% block topbar_actions %}
+  <a class="btn btn-secondary" href="{% url 'reports:export_csv' 'revenue' %}">{% include "_icon.html" with name="download" %} Invoices CSV</a>
+  <a class="btn btn-secondary" href="{% url 'reports:export_csv' 'appointments' %}">{% include "_icon.html" with name="download" %} Appointments CSV</a>
+  <a class="btn btn-secondary" href="{% url 'reports:export_csv' 'medicines' %}">{% include "_icon.html" with name="download" %} Pharmacy CSV</a>
+{% endblock %}
+{% block content %}
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">{% include "_icon.html" with name="chart" %} Revenue by invoice status</div>
+    <div class="table-wrap" style="box-shadow:none">
+      <table class="data">
+        <thead><tr><th>Status</th><th class="num">Invoices</th><th class="num">Total</th></tr></thead>
+        <tbody>
+          {% for r in revenue_by_status %}
+          <tr><td>{{ r.status|title }}</td><td class="num">{{ r.count }}</td><td class="num"><strong>{{ r.total|floatformat:2 }}</strong></td></tr>
+          {% empty %}
+          <tr><td colspan="3"><div class="empty">No invoices yet.</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <dl class="kv mt">
+      <dt>Outstanding due</dt><dd><strong>{{ outstanding.due|default:0|floatformat:2 }}</strong></dd>
+      <dt>Collected (partial)</dt><dd>{{ outstanding.paid|default:0|floatformat:2 }}</dd>
+    </dl>
+  </div>
+
+  <div class="card">
+    <div class="card-title">{% include "_icon.html" with name="calendar" %} Appointments per doctor — {{ month }}</div>
+    <div class="table-wrap" style="box-shadow:none">
+      <table class="data">
+        <thead><tr><th>Doctor</th><th>Specialization</th><th class="num">Appointments</th></tr></thead>
+        <tbody>
+          {% for r in appts_per_doctor %}
+          <tr><td>Dr. {{ r.doctor__first_name }} {{ r.doctor__last_name }}</td><td class="small">{{ r.doctor__specialization }}</td><td class="num"><strong>{{ r.count }}</strong></td></tr>
+          {% empty %}
+          <tr><td colspan="3"><div class="empty">No appointments this month.</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-title">{% include "_icon.html" with name="pill" %} Top dispensed medicines</div>
+  <div class="table-wrap" style="box-shadow:none">
+    <table class="data">
+      <thead><tr><th>Medicine</th><th class="num">Quantity dispensed</th><th class="num">Revenue</th></tr></thead>
+      <tbody>
+        {% for r in top_medicines %}
+        <tr><td>{{ r.medicine__name }} <span class="small muted">({{ r.medicine__unit }})</span></td><td class="num"><strong>{{ r.qty }}</strong></td><td class="num">{{ r.revenue|floatformat:2 }}</td></tr>
+        {% empty %}
+        <tr><td colspan="3"><div class="empty">No dispensing records yet.</div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

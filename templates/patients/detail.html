@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}{{ patient.patient_no }}{% endblock %}
+{% block page_title %}{{ patient.full_name }} <span class="muted small">{{ patient.patient_no }}</span>{% endblock %}
+{% block topbar_actions %}
+  <a class="btn btn-secondary" href="{% url 'patients:edit' patient.pk %}">{% include "_icon.html" with name="edit" %} Edit</a>
+  {% if request.user.role == "admin" or request.user.role == "doctor" %}
+  <a class="btn btn-primary" href="{% url 'clinical:record_create' patient.pk %}">{% include "_icon.html" with name="plus" %} New record</a>
+  {% endif %}
+{% endblock %}
+{% block content %}
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">{% include "_icon.html" with name="user" %} Patient details</div>
+    <dl class="kv">
+      <dt>Patient No</dt><dd><strong>{{ patient.patient_no }}</strong></dd>
+      <dt>Date of birth</dt><dd>{{ patient.dob|date:"d M Y" }}</dd>
+      <dt>Gender</dt><dd>{{ patient.get_gender_display }}</dd>
+      <dt>Phone</dt><dd>{{ patient.phone }}</dd>
+      <dt>Email</dt><dd>{{ patient.email|default:"—" }}</dd>
+      <dt>Address</dt><dd>{{ patient.address|default:"—" }}</dd>
+      <dt>Blood group</dt><dd>{{ patient.blood_group|default:"—" }}</dd>
+      <dt>Allergies</dt><dd>{% if patient.allergies %}<span class="badge b-red">{{ patient.allergies }}</span>{% else %}None recorded{% endif %}</dd>
+      <dt>Registered</dt><dd class="small muted">{{ patient.created_at|date:"d M Y" }}</dd>
+    </dl>
+  </div>
+
+  <div class="card">
+    <div class="card-title">{% include "_icon.html" with name="clock" %} Timeline</div>
+    <ul class="timeline">
+      {% for r in records %}
+        <li><div class="t-date">{{ r.visit_date|date:"d M Y" }} · Medical record</div>
+            <div class="t-body"><a href="{% url 'clinical:record_detail' r.pk %}">{{ r.diagnosis|truncatechars:80 }}</a></div></li>
+      {% endfor %}
+      {% for a in appointments %}
+        <li><div class="t-date">{{ a.appt_date|date:"d M Y" }} {{ a.appt_time|time:"H:i" }} · Appointment</div>
+            <div class="t-body">{{ a.doctor|default:"—" }} — <span class="badge b-grey">{{ a.get_status_display }}</span></div></li>
+      {% endfor %}
+      {% for o in lab_orders %}
+        <li><div class="t-date">{{ o.ordered_at|date:"d M Y" }} · Lab</div>
+            <div class="t-body">{{ o.test.name }} — <span class="badge {% if o.status == 'completed' %}b-green{% else %}b-amber{% endif %}">{{ o.get_status_display }}</span></div></li>
+      {% endfor %}
+      {% for i in invoices %}
+        <li><div class="t-date">{{ i.issue_date|date:"d M Y" }} · Invoice</div>
+            <div class="t-body"><a href="{% url 'billing:invoice_detail' i.pk %}">{{ i.invoice_no }}</a> — {{ i.total }} <span class="badge {% if i.status == 'paid' %}b-green{% elif i.status == 'partial' %}b-amber{% else %}b-red{% endif %}">{{ i.get_status_display }}</span></div></li>
+      {% endfor %}
+      {% for ad in admissions %}
+        <li><div class="t-date">{{ ad.admit_date|date:"d M Y" }} · Admission</div>
+            <div class="t-body">{{ ad.bed }} — <span class="badge {% if ad.status == 'admitted' %}b-blue{% else %}b-grey{% endif %}">{{ ad.get_status_display }}</span></div></li>
+      {% endfor %}
+      {% if not records and not appointments and not lab_orders and not invoices and not admissions %}
+        <li><div class="t-body muted">No history yet.</div></li>
+      {% endif %}
+    </ul>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Dispense medicine{% endblock %}
+{% block page_title %}Dispense Medicine{% endblock %}
+{% block content %}
+<div class="card form-card">
+  <div class="alert alert-info">{% include "_icon.html" with name="pill" %}
+    Dispensing deducts stock atomically and automatically creates an <strong>unpaid invoice</strong> for the patient.
+  </div>
+  <form method="post">
+    {% csrf_token %}
+    {% include "_form_fields.html" with form=form %}
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Dispense &amp; bill</button>
+      <a class="btn btn-secondary" href="{% url 'pharmacy:inventory' %}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

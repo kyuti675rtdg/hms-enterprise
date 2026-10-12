@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Wards{% endblock %}
+{% block page_title %}Wards &amp; Beds{% endblock %}
+{% block topbar_actions %}
+  <a class="btn btn-primary" href="{% url 'wards:admission_create' %}">{% include "_icon.html" with name="plus" %} Admit patient</a>
+{% endblock %}
+{% block content %}
+<div class="stat-grid">
+  {% for w in wards %}
+  <a href="{% url 'wards:ward_detail' w.pk %}" class="stat-card" style="text-decoration:none;color:inherit">
+    <div class="stat-label">{{ w.name }} · {{ w.get_ward_type_display }}</div>
+    <div class="stat-value">{{ w.available_count }}<span class="small muted"> / {{ w.beds.count }} free</span></div>
+    <div class="stat-sub">{{ w.occupied_count }} occupied</div>
+  </a>
+  {% endfor %}
+</div>
+<div class="card">
+  <div class="card-title">{% include "_icon.html" with name="bed" %} Bed board</div>
+  {% for w in wards %}
+    <div class="ward-head">
+      <h3 style="margin:0"><a href="{% url 'wards:ward_detail' w.pk %}">{{ w.name }}</a></h3>
+      <span class="small muted">{{ w.available_count }} available · {{ w.occupied_count }} occupied</span>
+    </div>
+    <div class="bed-grid" style="margin-bottom:1.5rem">
+      {% for bed in w.beds.all %}
+      <div class="bed bed-{{ bed.status }}">
+        {% include "_icon.html" with name="bed" %}
+        <strong>{{ bed.bed_no }}</strong>
+        <small>{{ bed.get_status_display }}</small>
+      </div>
+      {% endfor %}
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

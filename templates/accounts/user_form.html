@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}New user{% endblock %}
+{% block page_title %}Create User Account{% endblock %}
+{% block content %}
+<div class="card form-card">
+  <form method="post">
+    {% csrf_token %}
+    {% include "_form_fields.html" with form=form %}
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Create user</button>
+      <a class="btn btn-secondary" href="{% url 'accounts:user_list' %}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

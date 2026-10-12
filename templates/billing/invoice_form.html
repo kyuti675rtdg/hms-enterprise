@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}New invoice{% endblock %}
+{% block page_title %}New Invoice{% endblock %}
+{% block content %}
+<div class="card form-card" style="max-width:860px">
+  <form method="post" id="invoice-form">
+    {% csrf_token %}
+    <div class="field">
+      <label for="id_patient">Patient</label>
+      <select name="patient" id="id_patient" required>
+        <option value="">Select patient…</option>
+        {% for p in patients %}
+        <option value="{{ p.pk }}">{{ p.patient_no }} — {{ p.full_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <label style="font-weight:600;font-size:.88rem;display:block;margin-bottom:.35rem">Line items</label>
+    <div class="line-items" id="line-items">
+      <div class="line-row header">
+        <div>Description</div><div>Qty</div><div>Unit price</div><div>Line total</div><div></div>
+      </div>
+    </div>
+    <button type="button" class="btn btn-secondary btn-sm" id="add-line">{% include "_icon.html" with name="plus" %} Add line</button>
+
+    <div class="form-row mt">
+      <div class="field">
+        <label for="id_discount">Discount</label>
+        <input type="number" name="discount" id="id_discount" value="0" min="0" step="0.01">
+      </div>
+      <div class="field">
+        <label for="id_tax">Tax</label>
+        <input type="number" name="tax" id="id_tax" value="0" min="0" step="0.01">
+      </div>
+    </div>
+    <div class="alert alert-info" style="margin-top:.5rem">
+      Invoice total: <strong id="invoice-total">0.00</strong>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Create invoice</button>
+      <a class="btn btn-secondary" href="{% url 'billing:invoice_list' %}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+(function () {
+  var box = document.getElementById("line-items");
+  var totalEl = document.getElementById("invoice-total");
+
+  function recalc() {
+    var total = 0;
+    box.querySelectorAll(".line-row[data-line]").forEach(function (row) {
+      var qty = parseFloat(row.querySelector('input[name="quantity[]"]').value) || 0;
+      var price = parseFloat(row.querySelector('input[name="unit_price[]"]').value) || 0;
+      var line = qty * price;
+      row.querySelector(".line-total").textContent = line.toFixed(2);
+      total += line;
+    });
+    var discount = parseFloat(document.getElementById("id_discount").value) || 0;
+    var tax = parseFloat(document.getElementById("id_tax").value) || 0;
+    totalEl.textContent = (total - discount + tax).toFixed(2);
+  }
+
+  function addLine() {
+    var row = document.createElement("div");
+    row.className = "line-row";
+    row.setAttribute("data-line", "");
+    row.innerHTML =
+      '<div><input type="text" name="description[]" placeholder="e.g. Consultation fee" required></div>' +
+      '<div><input type="number" name="quantity[]" value="1" min="0.01" step="0.01" required></div>' +
+      '<div><input type="number" name="unit_price[]" value="0" min="0" step="0.01" required></div>' +
+      '<div class="line-total">0.00</div>' +
+      '<div><button type="button" class="remove-line" title="Remove line">{% include "_icon.html" with name="x" %}</button></div>';
+    row.querySelector(".remove-line").addEventListener("click", function () {
+      row.remove();
+      recalc();
+    });
+    row.querySelectorAll("input").forEach(function (inp) {
+      inp.addEventListener("input", recalc);
+    });
+    box.appendChild(row);
+  }
+
+  document.getElementById("add-line").addEventListener("click", addLine);
+  document.getElementById("id_discount").addEventListener("input", recalc);
+  document.getElementById("id_tax").addEventListener("input", recalc);
+  addLine();
+  addLine();
+  recalc();
+})();
+</script>
+{% endblock %}

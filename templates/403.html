@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>403 · HMS Enterprise</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body>
+<div class="login-wrap">
+  <div class="login-card" style="text-align:center">
+    <h1>403 — Forbidden</h1>
+    <p class="sub">Your role doesn't have permission to view this page.</p>
+    <a class="btn btn-primary" href="{% url 'reports:dashboard' %}">Back to dashboard</a>
+  </div>
+</div>
+</body>
+</html>

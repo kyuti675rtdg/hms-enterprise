@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard <span class="muted small">{{ today|date:"l, d M Y" }}</span>{% endblock %}
+{% block content %}
+<div class="stat-grid">
+  <div class="stat-card">
+    <div class="stat-label">Total patients</div>
+    <div class="stat-value">{{ kpis.patients }}</div>
+    <div class="stat-sub"><a href="{% url 'patients:list' %}">View all patients</a></div>
+  </div>
+  <div class="stat-card tint-teal">
+    <div class="stat-label">Appointments today</div>
+    <div class="stat-value">{{ kpis.appointments_today }}</div>
+    <div class="stat-sub"><a href="{% url 'scheduling:appointment_list' %}?date={{ today|date:'Y-m-d' }}">Today's schedule</a></div>
+  </div>
+  <div class="stat-card tint-amber">
+    <div class="stat-label">Beds occupied</div>
+    <div class="stat-value">{{ kpis.beds_occupied }}<span class="small muted"> / {{ kpis.beds_total }}</span></div>
+    <div class="stat-sub"><a href="{% url 'wards:ward_list' %}">Bed board</a></div>
+  </div>
+  <div class="stat-card tint-green">
+    <div class="stat-label">Revenue this month</div>
+    <div class="stat-value">{{ kpis.revenue_month|floatformat:0 }}</div>
+    <div class="stat-sub">collected payments</div>
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">{% include "_icon.html" with name="chart" %} Revenue — last 14 days</div>
+    <div class="chart" role="img" aria-label="Revenue bar chart">
+      {% for c in chart %}
+      <div class="bar-col">
+        <div class="bar-tip">{{ c.total|floatformat:0 }}</div>
+        <div class="bar" style="height:{% widthratio c.total chart_max 100 %}%" title="{{ c.label }}: {{ c.total|floatformat:2 }}"></div>
+        <div class="bar-label">{{ c.label }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">{% include "_icon.html" with name="calendar" %} Today's appointments</div>
+    {% if todays_appointments %}
+    <div class="table-wrap" style="box-shadow:none">
+      <table class="data">
+        <thead><tr><th>Time</th><th>Patient</th><th>Doctor</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for a in todays_appointments %}
+          <tr>
+            <td>{{ a.appt_time|time:"H:i" }}</td>
+            <td><a href="{% url 'patients:detail' a.patient.pk %}">{{ a.patient.full_name }}</a></td>
+            <td class="small">{{ a.doctor|default:"—" }}</td>
+            <td><span class="badge {% if a.status == 'scheduled' %}b-blue{% elif a.status == 'completed' %}b-green{% elif a.status == 'cancelled' %}b-red{% else %}b-amber{% endif %}">{{ a.get_status_display }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="muted">No appointments scheduled for today.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">{% include "_icon.html" with name="alert" %} Low-stock alerts</div>
+    {% if low_stock %}
+    <div class="table-wrap" style="box-shadow:none">
+      <table class="data">
+        <thead><tr><th>Medicine</th><th class="num">Stock</th><th class="num">Reorder at</th></tr></thead>
+        <tbody>
+          {% for m in low_stock %}
+          <tr><td>{{ m.name }}</td><td class="num"><strong>{{ m.quantity_in_stock }}</strong></td><td class="num">{{ m.reorder_level }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p class="mt"><a href="{% url 'pharmacy:inventory' %}?low=1">View all low-stock items</a></p>
+    {% else %}
+    <p class="muted">All stock levels are healthy.</p>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <div class="card-title">{% include "_icon.html" with name="receipt" %} Recent invoices</div>
+    {% if recent_invoices %}
+    <div class="table-wrap" style="box-shadow:none">
+      <table class="data">
+        <thead><tr><th>Invoice</th><th>Patient</th><th class="num">Total</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for i in recent_invoices %}
+          <tr>
+            <td><a href="{% url 'billing:invoice_detail' i.pk %}"><strong>{{ i.invoice_no }}</strong></a></td>
+            <td class="small">{{ i.patient.full_name }}</td>
+            <td class="num">{{ i.total }}</td>
+            <td><span class="badge {% if i.status == 'paid' %}b-green{% elif i.status == 'partial' %}b-amber{% else %}b-red{% endif %}">{{ i.get_status_display }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="muted">No invoices yet.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

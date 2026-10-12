@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}{{ invoice.invoice_no }}{% endblock %}
+{% block page_title %}Invoice {{ invoice.invoice_no }}{% endblock %}
+{% block topbar_actions %}
+  <a class="btn btn-secondary" href="{% url 'billing:receipt' invoice.pk %}" target="_blank">{% include "_icon.html" with name="printer" %} Receipt</a>
+{% endblock %}
+{% block content %}
+<div class="grid-2">
+  <div class="card">
+    <div class="card-title">{% include "_icon.html" with name="receipt" %} Invoice details</div>
+    <dl class="kv">
+      <dt>Patient</dt><dd><a href="{% url 'patients:detail' invoice.patient.pk %}">{{ invoice.patient.full_name }} ({{ invoice.patient.patient_no }})</a></dd>
+      <dt>Issue date</dt><dd>{{ invoice.issue_date|date:"d M Y" }}</dd>
+      <dt>Status</dt><dd><span class="badge {% if invoice.status == 'paid' %}b-green{% elif invoice.status == 'partial' %}b-amber{% else %}b-red{% endif %}">{{ invoice.get_status_display }}</span></dd>
+      <dt>Subtotal</dt><dd class="num">{{ invoice.subtotal }}</dd>
+      <dt>Discount</dt><dd class="num">{{ invoice.discount }}</dd>
+      <dt>Tax</dt><dd class="num">{{ invoice.tax }}</dd>
+      <dt><strong>Total</strong></dt><dd class="num"><strong>{{ invoice.total }}</strong></dd>
+      <dt>Amount paid</dt><dd class="num">{{ invoice.amount_paid }}</dd>
+      <dt><strong>Balance</strong></dt><dd class="num"><strong>{{ invoice.balance }}</strong></dd>
+    </dl>
+    <h3 class="mt">Line items</h3>
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Description</th><th class="num">Qty</th><th class="num">Unit price</th><th class="num">Line total</th></tr></thead>
+        <tbody>
+          {% for item in invoice.items.all %}
+          <tr><td>{{ item.description }}</td><td class="num">{{ item.quantity }}</td><td class="num">{{ item.unit_price }}</td><td class="num">{{ item.line_total }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div>
+    <div class="card">
+      <div class="card-title">{% include "_icon.html" with name="check" %} Record payment</div>
+      {% if invoice.balance > 0 %}
+      <form method="post" action="{% url 'billing:record_payment' invoice.pk %}">
+        {% csrf_token %}
+        {% include "_form_fields.html" with form=pay_form %}
+        <p class="small muted">Outstanding balance: <strong>{{ invoice.balance }}</strong>. Overpayments are blocked.</p>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Record payment</button>
+        </div>
+      </form>
+      {% else %}
+      <div class="alert alert-info" style="margin:0">This invoice is fully paid.</div>
+      {% endif %}
+    </div>
+    <div class="card">
+      <div class="card-title">{% include "_icon.html" with name="clock" %} Payment history</div>
+      {% if invoice.payments.all %}
+      <table class="data">
+        <thead><tr><th>Date</th><th class="num">Amount</th><th>Method</th><th>Received by</th></tr></thead>
+        <tbody>
+          {% for p in invoice.payments.all %}
+          <tr><td class="small">{{ p.paid_at|date:"d M Y H:i" }}</td><td class="num">{{ p.amount }}</td><td>{{ p.get_method_display }}</td><td class="small">{{ p.received_by.username|default:"—" }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="muted small">No payments recorded yet.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>404 · HMS Enterprise</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body>
+<div class="login-wrap">
+  <div class="login-card" style="text-align:center">
+    <h1>404 — Not found</h1>
+    <p class="sub">The page you're looking for doesn't exist.</p>
+    <a class="btn btn-primary" href="{% url 'reports:dashboard' %}">Back to dashboard</a>
+  </div>
+</div>
+</body>
+</html>

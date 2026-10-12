@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Test catalog{% endblock %}
+{% block page_title %}Lab Test Catalog{% endblock %}
+{% block topbar_actions %}
+  {% if request.user.role == "admin" %}
+  <a class="btn btn-primary" href="{% url 'laboratory:test_create' %}">{% include "_icon.html" with name="plus" %} Add test</a>
+  {% endif %}
+{% endblock %}
+{% block content %}
+<div class="table-wrap">
+  <table class="data">
+    <thead><tr><th>Test</th><th>Category</th><th class="num">Price</th>{% if request.user.role == "admin" %}<th class="row-actions">Actions</th>{% endif %}</tr></thead>
+    <tbody>
+      {% for t in tests %}
+      <tr>
+        <td><strong>{{ t.name }}</strong></td>
+        <td class="small">{{ t.category|default:"—" }}</td>
+        <td class="num">{{ t.price }}</td>
+        {% if request.user.role == "admin" %}
+        <td class="row-actions"><a class="btn btn-secondary btn-sm" href="{% url 'laboratory:test_edit' t.pk %}">Edit</a></td>
+        {% endif %}
+      </tr>
+      {% empty %}
+      <tr><td colspan="4"><div class="empty">No tests in catalog.</div></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

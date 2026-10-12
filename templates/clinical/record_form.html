@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}New medical record{% endblock %}
+{% block page_title %}New Medical Record — {{ patient.full_name }}{% endblock %}
+{% block content %}
+<div class="card form-card">
+  <form method="post">
+    {% csrf_token %}
+    {% include "_form_fields.html" with form=form %}
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Save record</button>
+      <a class="btn btn-secondary" href="{% url 'patients:detail' patient.pk %}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

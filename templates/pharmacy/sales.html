@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Pharmacy sales{% endblock %}
+{% block page_title %}Pharmacy Sales{% endblock %}
+{% block topbar_actions %}
+  <a class="btn btn-primary" href="{% url 'pharmacy:dispense' %}">{% include "_icon.html" with name="plus" %} Dispense</a>
+{% endblock %}
+{% block content %}
+<div class="table-wrap">
+  <table class="data">
+    <thead><tr><th>Date</th><th>Patient</th><th>Medicine</th><th class="num">Qty</th><th class="num">Unit price</th><th class="num">Total</th><th>Sold by</th></tr></thead>
+    <tbody>
+      {% for s in sales %}
+      <tr>
+        <td class="small">{{ s.sold_at|date:"d M Y H:i" }}</td>
+        <td><a href="{% url 'patients:detail' s.patient.pk %}">{{ s.patient.full_name }}</a></td>
+        <td>{{ s.medicine.name }}</td>
+        <td class="num">{{ s.quantity }}</td>
+        <td class="num">{{ s.unit_price }}</td>
+        <td class="num"><strong>{{ s.total }}</strong></td>
+        <td class="small">{{ s.sold_by.username|default:"—" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7"><div class="empty">No sales yet.</div></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

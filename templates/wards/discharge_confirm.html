@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Discharge patient{% endblock %}
+{% block page_title %}Discharge Patient{% endblock %}
+{% block content %}
+<div class="card form-card">
+  <p>Discharge <strong>{{ admission.patient.full_name }}</strong> from <strong>{{ admission.bed }}</strong>?
+     The bed will become available immediately.</p>
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Confirm discharge</button>
+      <a class="btn btn-secondary" href="{% url 'wards:ward_detail' admission.bed.ward.pk %}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

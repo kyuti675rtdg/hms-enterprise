@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Doctors{% endblock %}
+{% block page_title %}Doctors{% endblock %}
+{% block topbar_actions %}
+  <a class="btn btn-primary" href="{% url 'scheduling:doctor_create' %}">{% include "_icon.html" with name="plus" %} Add doctor</a>
+{% endblock %}
+{% block content %}
+<div class="table-wrap">
+  <table class="data">
+    <thead><tr><th>Name</th><th>Specialization</th><th>Phone</th><th>Email</th><th class="num">Fee</th><th>Status</th><th class="row-actions">Actions</th></tr></thead>
+    <tbody>
+      {% for d in doctors %}
+      <tr>
+        <td><strong>Dr. {{ d.first_name }} {{ d.last_name }}</strong></td>
+        <td>{{ d.specialization }}</td>
+        <td>{{ d.phone|default:"—" }}</td>
+        <td>{{ d.email|default:"—" }}</td>
+        <td class="num">{{ d.consultation_fee }}</td>
+        <td>{% if d.active %}<span class="badge b-green">Active</span>{% else %}<span class="badge b-grey">Inactive</span>{% endif %}</td>
+        <td class="row-actions"><a class="btn btn-secondary btn-sm" href="{% url 'scheduling:doctor_edit' d.pk %}">Edit</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7"><div class="empty">No doctors yet.</div></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Enter result{% endblock %}
+{% block page_title %}Enter Result — {{ order.test.name }}{% endblock %}
+{% block content %}
+<div class="card form-card">
+  <dl class="kv" style="margin-bottom:1.25rem">
+    <dt>Patient</dt><dd>{{ order.patient.full_name }} ({{ order.patient.patient_no }})</dd>
+    <dt>Test</dt><dd>{{ order.test.name }}</dd>
+    <dt>Ordered</dt><dd>{{ order.ordered_at|date:"d M Y H:i" }}</dd>
+  </dl>
+  <form method="post">
+    {% csrf_token %}
+    {% include "_form_fields.html" with form=form %}
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Save &amp; complete</button>
+      <a class="btn btn-secondary" href="{% url 'laboratory:order_list' %}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

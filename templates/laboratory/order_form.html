@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Order lab test{% endblock %}
+{% block page_title %}Order Lab Test{% endblock %}
+{% block content %}
+<div class="card form-card">
+  <form method="post">
+    {% csrf_token %}
+    {% include "_form_fields.html" with form=form %}
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Place order</button>
+      <a class="btn btn-secondary" href="{% url 'laboratory:order_list' %}">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Patients{% endblock %}
+{% block page_title %}Patients{% endblock %}
+{% block topbar_actions %}
+  <a class="btn btn-primary" href="{% url 'patients:create' %}">{% include "_icon.html" with name="plus" %} Register patient</a>
+{% endblock %}
+{% block content %}
+<div class="toolbar">
+  <div class="search-box">
+    {% include "_icon.html" with name="search" %}
+    <input type="search" name="q" placeholder="Search name, phone, or patient no…"
+           value="{{ q }}"
+           hx-get="{% url 'patients:list' %}" hx-trigger="keyup changed delay:300ms"
+           hx-target="#patient-rows" hx-swap="innerHTML" autocomplete="off">
+  </div>
+</div>
+<div class="table-wrap">
+  <table class="data">
+    <thead><tr><th>Patient No</th><th>Name</th><th>Gender</th><th>DOB</th><th>Phone</th><th>Blood</th><th class="row-actions">Actions</th></tr></thead>
+    <tbody id="patient-rows">
+      {% include "patients/_rows.html" %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

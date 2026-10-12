@@ -1,0 +1,49 @@
+# Render Blueprint for HMS Enterprise (Django 5.2 + PostgreSQL 16)
+#
+# HOW TO DEPLOY (no code changes needed):
+#   1. Push this project to a GitHub repo (see README "Prepare for hosting").
+#   2. Render Dashboard -> New -> Blueprint -> select the repo -> Apply.
+#   3. Wait for both resources to go Live (first build takes ~5-15 min).
+#   4. ONCE ONLY: open the web service's "Shell" tab and run
+#        python manage.py seed_demo
+#      to create the demo logins (admin/admin123, doctor1/doc123,
+#      recep/recep123, pharm/pharm123, lab/lab123).
+#      Do NOT run it again afterwards - it clears the demo tables first,
+#      so it would wipe real data.
+#   5. Open the service URL (https://hms-enterprise.onrender.com) and log in.
+#
+# FREE-TIER REALITY (verified 2026-10-11):
+#   - Web service sleeps after ~15 min idle; first request after that takes
+#     ~30-60s to wake. Fine for demos/evaluation.
+#   - Free PostgreSQL EXPIRES 30 days after creation; data is deleted unless
+#     the database is upgraded (~$7/mo) before then. Upgrade before putting
+#     anything you care about in it.
+#   - No credit card is required for the free tier.
+
+databases:
+  - name: hms-db
+    databaseName: hmsdb
+    user: hms
+    plan: free
+    region: frankfurt
+
+services:
+  - type: web
+    name: hms-enterprise
+    env: python
+    plan: free
+    region: frankfurt
+    buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --noinput"
+    startCommand: "python manage.py migrate --noinput && gunicorn hms_enterprise.wsgi:application --bind 0.0.0.0:$PORT --workers 2"
+    healthCheckPath: /accounts/login/
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.0"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "0"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: hms-db
+          property: connectionString

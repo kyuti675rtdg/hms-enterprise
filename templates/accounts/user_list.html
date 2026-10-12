@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Users{% endblock %}
+{% block page_title %}User Accounts{% endblock %}
+{% block topbar_actions %}
+  <a class="btn btn-primary" href="{% url 'accounts:user_create' %}">{% include "_icon.html" with name="plus" %} New user</a>
+{% endblock %}
+{% block content %}
+<div class="table-wrap">
+  <table class="data">
+    <thead><tr><th>Username</th><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Last login</th></tr></thead>
+    <tbody>
+      {% for u in users %}
+      <tr>
+        <td><strong>{{ u.username }}</strong></td>
+        <td>{{ u.get_full_name|default:"—" }}</td>
+        <td>{{ u.email|default:"—" }}</td>
+        <td><span class="badge b-blue">{{ u.get_role_display }}</span></td>
+        <td>{% if u.is_active %}<span class="badge b-green">Active</span>{% else %}<span class="badge b-grey">Inactive</span>{% endif %}</td>
+        <td class="small muted">{{ u.last_login|date:"d M Y H:i"|default:"Never" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6"><div class="empty">No users found.</div></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

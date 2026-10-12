@@ -1,0 +1,16 @@
+{% for p in patients %}
+<tr>
+  <td><strong>{{ p.patient_no }}</strong></td>
+  <td><a href="{% url 'patients:detail' p.pk %}">{{ p.full_name }}</a></td>
+  <td>{{ p.get_gender_display }}</td>
+  <td>{{ p.dob|date:"d M Y" }}</td>
+  <td>{{ p.phone }}</td>
+  <td>{{ p.blood_group|default:"—" }}</td>
+  <td class="row-actions">
+    <a class="btn btn-secondary btn-sm" href="{% url 'patients:detail' p.pk %}">View</a>
+    <a class="btn btn-secondary btn-sm" href="{% url 'patients:edit' p.pk %}">Edit</a>
+  </td>
+</tr>
+{% empty %}
+<tr><td colspan="7"><div class="empty">No patients found. Try a different search.</div></td></tr>
+{% endfor %}
