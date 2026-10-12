@@ -23,6 +23,16 @@ ALLOWED_HOSTS = [
 _render_host = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
 if _render_host and _render_host not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append(_render_host)
+# Browsers send an Origin header on HTTPS POSTs; Django 4+ rejects origins not
+# listed in CSRF_TRUSTED_ORIGINS, which would break every login/form on Render.
+# Trust the Render hostname automatically, mirroring ALLOWED_HOSTS above.
+CSRF_TRUSTED_ORIGINS = [
+    o.strip() for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()
+]
+if _render_host:
+    _render_origin = f"https://{_render_host}"
+    if _render_origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(_render_origin)
 
 
 def _parse_database_url(url: str) -> dict:
